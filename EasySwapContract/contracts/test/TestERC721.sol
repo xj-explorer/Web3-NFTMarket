@@ -14,6 +14,9 @@ contract TestERC721 is ERC721Enumerable, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        // 测试，无效操作
+        tokenId += 1;
+        
         return _tokenURI;
     }
 

@@ -9,6 +9,19 @@ const { ethers, upgrades } = require("hardhat")
       esDex AdminAddress: 0xe839419C14188F7b79a0E4C09cFaF612398e7795
  */
 
+/**  * 2025/09/24 in sepolia testnet
+esVault contract deployed to: 0x6cA1dade166322e1AEC272e7fB180d9Fc4847117
+0xCC980d87263f7bE2cD847582B14625d163d038F4  esVault getImplementationAddress
+0x6030fbcc5a06c4765B46f946C8ca9521153a7190  esVault getAdminAddress5
+
+esDex contract deployed to: 0x12F86EF70E2c0e4d04fd13db35C396eC2331aC7A
+0xcA0c903427829fD4F5Ac548dBBEc92b70E19892B  esDex getImplementationAddress
+0x6030fbcc5a06c4765B46f946C8ca9521153a7190  esDex getAdminAddress
+
+deployer:  0x74B5057e77D4F58CcC70bF1c7dc9f8405BCc72f0
+esVault setOrderBook tx: 0x6c2274767ce524d6ef400d63815ad05135e53501accbcaf19183a07a10739144
+*/
+
 async function main() {
   const [deployer] = await ethers.getSigners()
   console.log("deployer: ", deployer.address)
@@ -31,8 +44,11 @@ async function main() {
   // console.log(await upgrades.erc1967.getImplementationAddress(esDex.address), " esDex getImplementationAddress")
   // console.log(await upgrades.erc1967.getAdminAddress(esDex.address), " esDex getAdminAddress")
 
-  esDexAddress = "0xcEE5AA84032D4a53a0F9d2c33F36701c3eAD5895"
-  esVaultAddress = "0xaD65f3dEac0Fa9Af4eeDC96E95574AEaba6A2834"
+
+  // esDexAddress = "0xcEE5AA84032D4a53a0F9d2c33F36701c3eAD5895"
+  // esVaultAddress = "0xaD65f3dEac0Fa9Af4eeDC96E95574AEaba6A2834"
+  esDexAddress = "0x12F86EF70E2c0e4d04fd13db35C396eC2331aC7A"
+  esVaultAddress = "0x6cA1dade166322e1AEC272e7fB180d9Fc4847117"
   const esVault = await (
     await ethers.getContractFactory("EasySwapVault")
   ).attach(esVaultAddress)

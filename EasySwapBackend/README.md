@@ -22,6 +22,7 @@ replace github.com/ProjectsTask/EasySwapBase => ../EasySwapBase
 3. infura 上面注册一个账号，给 `chain_supported.endpoint` 替换掉
 
 4. 通过部署 https://github.com/ProjectsTask/EasySwapContract（看里面的README.md）得到订单簿合约的地址 替换掉 config/config.toml 中的 easyswap_market.contract 
+esVaultAddress = "0x6cA1dade166322e1AEC272e7fB180d9Fc4847117"
 
 5. docker 上面 运行一下 `EasySwapSync/docker-compose.yml` 给 redis 和 mysql 环境整好
 
