@@ -13,7 +13,7 @@ import (
 const (
 	// port       = ":9000"
 	repoRoot          = ""
-	defaultConfigPath = "./config/config.toml"
+	defaultConfigPath = "../config/config.toml"
 )
 
 func main() {

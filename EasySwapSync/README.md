@@ -8,6 +8,10 @@ For example, if the machine is arm64 architecture, you can use the following doc
 ```shell
 docker-compose -f docker-compose-arm64.yml up -d
 ```
+if the machine is amd64 architecture, you can use the following docker-compose file to start mysql and redis.
+```shell
+docker-compose -f docker-compose-intel64.yml up -d
+```
 
 For more information about the table creation statement, see the SQL file in the db/migrations directory.
 
