@@ -5,10 +5,10 @@ services:
     image: arm64v8/mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpasswd
+      MYSQL_ROOT_PASSWORD: xiejun123
       MYSQL_DATABASE: easyswap
-      MYSQL_USER: easyuser
-      MYSQL_PASSWORD: easypasswd
+      MYSQL_USER: xiejun
+      MYSQL_PASSWORD: xiejun123
     ports:
       - "3306:3306"
     volumes:
