@@ -81,8 +81,14 @@ describe("EasySwap Test", function () {
             }
             const orders = [order];
 
+            // 使用 callStatic 调用 makeOrders 方法，该调用不会在区块链上产生实际交易，仅模拟执行并返回结果
             orderKeys = await esDex.callStatic.makeOrders(orders)
             expect(orderKeys[0]).to.not.equal(Byte32Zero)
+            // 为了对比，添加直接调用 makeOrders 方法的代码示例
+            // 注意：直接调用会在区块链上产生实际交易
+            // const tx = await esDex.makeOrders(orders)
+            // const receipt = await tx.wait()
+            // 直接调用返回的是交易收据，而 callStatic 调用返回的是合约方法的返回值
 
             // tx = await esDex.makeOrders(orders)
             // txRec = await tx.wait()
