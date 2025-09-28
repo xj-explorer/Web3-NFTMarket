@@ -39,6 +39,12 @@ interface IEasySwapOrderBook {
         LibOrder.EditDetail[] calldata editDetails
     ) external payable returns (OrderKey[] memory newOrderKeys);
 
+    /**
+     * @notice 匹配单个卖单和买单
+     * @dev 执行单个卖单和买单的匹配操作，若买单为ETH支付，需要随调用传入足够的ETH。
+     * @param sellOrder 卖单的订单结构数据
+     * @param buyOrder 买单的订单结构数据
+     */
     function matchOrder(
         LibOrder.Order calldata sellOrder,
         LibOrder.Order calldata buyOrder

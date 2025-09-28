@@ -1,22 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// 导入 OpenZeppelin 可升级合约库中的初始化功能，用于可升级合约的初始化
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+// 导入 OpenZeppelin 可升级合约库中的上下文功能，提供消息发送者等上下文信息
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+// 导入 OpenZeppelin 可升级合约库中的可拥有者功能，用于合约所有权管理
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+// 导入 OpenZeppelin 可升级合约库中的防重入保护功能，防止重入攻击
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+// 导入 OpenZeppelin 可升级合约库中的暂停功能，允许合约暂停和恢复
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
+// 导入自定义库中的安全转账功能和 ERC721 接口
 import {LibTransferSafeUpgradeable, IERC721} from "./libraries/LibTransferSafeUpgradeable.sol";
+// 导入自定义库中的价格类型
 import {Price} from "./libraries/RedBlackTreeLibrary.sol";
+// 导入自定义库中的订单相关类型和功能
 import {LibOrder, OrderKey} from "./libraries/LibOrder.sol";
+// 导入自定义库中的支付信息相关功能
 import {LibPayInfo} from "./libraries/LibPayInfo.sol";
 
+// 导入自定义接口，定义订单簿的交互接口
 import {IEasySwapOrderBook} from "./interface/IEasySwapOrderBook.sol";
+// 导入自定义接口，定义交易金库的交互接口
 import {IEasySwapVault} from "./interface/IEasySwapVault.sol";
 
+// 导入订单存储相关的合约
 import {OrderStorage} from "./OrderStorage.sol";
+// 导入订单验证相关的合约
 import {OrderValidator} from "./OrderValidator.sol";
+// 导入协议管理相关的合约
 import {ProtocolManager} from "./ProtocolManager.sol";
 
 contract EasySwapOrderBook is

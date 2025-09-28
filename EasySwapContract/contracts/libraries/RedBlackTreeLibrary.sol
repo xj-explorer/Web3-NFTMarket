@@ -15,6 +15,29 @@ pragma solidity ^0.8.19;
 // ----------------------------------------------------------------------------
 type Price is uint128;
 
+// 当前红黑树库中对价格（Price）进行排序的逻辑如下：左小右大，next为右子节点，prev为左子节点
+// 1. 使用 `Price` 类型（本质是 uint128）作为键来存储和排序节点。
+// 2. 在插入节点时，通过比较 `Price.unwrap(key)` 的值来决定节点的位置：
+//    - 如果新键值小于当前节点的值，则插入到左子树；
+//    - 如果新键值大于或等于当前节点的值，则插入到右子树。
+// 例如在 `insert` 函数中：
+// while (isNotEmpty(probe)) {
+//     cursor = probe;
+//     if (Price.unwrap(key) < Price.unwrap(probe)) {
+//         probe = self.nodes[probe].left;
+//     } else {
+//         probe = self.nodes[probe].right;
+//     }
+// }
+// 3. 查找最小和最大节点时，同样依据左右子树的结构进行遍历：
+//    - `treeMinimum` 函数通过不断向左子树遍历找到最小值；
+//    - `treeMaximum` 函数通过不断向右子树遍历找到最大值。
+// 4. 在查找前驱和后继节点时，也是基于节点间的大小关系进行遍历查找。
+//    - `treeSuccessor` 函数通过检查右子树是否为空来确定是否有后继节点；
+//    - 如果右子树为空，则从当前节点开始向上遍历父节点，遍历过程中，当找到一个节点，当前节点是该节点的左子节点时，该节点就是后继节点；
+//    - 如果右子树不为空，则后继节点为右子树中的最小值。
+// 5. 其他操作（如删除节点）也基于节点间的大小关系进行调整，确保树的平衡性。
+
 library RedBlackTreeLibrary {
     struct Node {
         Price parent;

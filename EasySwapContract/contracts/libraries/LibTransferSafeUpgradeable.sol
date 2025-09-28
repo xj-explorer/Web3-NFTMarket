@@ -209,6 +209,7 @@ library LibTransferSafeUpgradeable {
 
             require(success, "NFT_TRANSFER_FROM_FAILED");
 
+            // 使用 unchecked 块来避免溢出检查，提高 gas 效率，因为 i 不会超过 tokenIds 的长度
             unchecked {
                 ++i;
             }

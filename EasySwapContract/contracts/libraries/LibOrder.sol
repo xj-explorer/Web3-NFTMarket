@@ -3,17 +3,19 @@ pragma solidity ^0.8.19;
 
 import {Price} from "./RedBlackTreeLibrary.sol";
 
+// 定义 OrderKey 类型，使用 bytes32 作为底层类型，用于唯一标识订单
 type OrderKey is bytes32;
 
 library LibOrder {
     enum Side {
-        List,
-        Bid
+        List,// 出售订单
+        Bid // 购买订单
     }
 
+    /// @dev 定义订单的销售类型
     enum SaleKind {
-        FixedPriceForCollection,
-        FixedPriceForItem
+        FixedPriceForCollection, // 针对整个集合的固定价格销售
+        FixedPriceForItem // 针对单个物品的固定价格销售
     }
 
     struct Asset {
@@ -28,13 +30,13 @@ library LibOrder {
     }
 
     struct Order {
-        Side side;
-        SaleKind saleKind;
-        address maker;
-        Asset nft;
-        Price price; // unit price of nft
-        uint64 expiry;
-        uint64 salt;
+        Side side; // 订单类型，List 为出售订单，Bid 为购买订单
+        SaleKind saleKind; // 订单的销售类型，FixedPriceForCollection 为集合固定价销售，FixedPriceForItem 为单品固定价销售
+        address maker; // 订单创建者的地址
+        Asset nft; // 订单关联的 NFT 资产信息
+        Price price; // unit price of nft，NFT 的单价
+        uint64 expiry; // 订单的过期时间戳
+        uint64 salt; // 随机数，用于生成唯一的订单哈希
     }
 
     struct DBOrder {
@@ -53,11 +55,15 @@ library LibOrder {
         LibOrder.Order newOrder; // new order struct which need to be add
     }
 
+    /// @dev 定义订单匹配详情结构体，用于记录一次订单匹配中的出售订单和购买订单
     struct MatchDetail {
-        LibOrder.Order sellOrder;
-        LibOrder.Order buyOrder;
+        LibOrder.Order sellOrder; // 出售订单
+        LibOrder.Order buyOrder;  // 购买订单
     }
 
+    // 定义一个哨兵订单键常量，使用值 0x0 包装，用于表示空订单或边界条件
+    // wrap() 方法用于将底层类型的值（这里是 bytes32 类型的 0x0）包装为自定义类型 OrderKey。
+    // 自定义类型通过包装操作来确保类型安全，防止不同类型的值被意外混用。
     OrderKey public constant ORDERKEY_SENTINEL = OrderKey.wrap(0x0);
 
     bytes32 public constant ASSET_TYPEHASH =
@@ -99,6 +105,10 @@ library LibOrder {
     }
 
     function isSentinel(OrderKey orderKey) internal pure returns (bool) {
+        // unwrap() 方法用于将自定义类型 OrderKey 转换为其底层类型 bytes32，
+        // 这样才能对两个 OrderKey 类型的值进行比较操作，因为自定义类型不能直接比较，
+        // 需要转换为底层类型后再进行比较。
+        // 检查订单键是否为初始零值
         return OrderKey.unwrap(orderKey) == OrderKey.unwrap(ORDERKEY_SENTINEL);
     }
 
