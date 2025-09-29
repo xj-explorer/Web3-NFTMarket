@@ -74,6 +74,9 @@ library LibOrder {
             "Order(uint8 side,uint8 saleKind,address maker,Asset nft,uint128 price,uint64 expiry,uint64 salt)Asset(uint256 tokenId,address collection,uint96 amount)"
         );
 
+    /// @dev 计算资产的哈希值，用于唯一标识资产
+    /// @param asset 资产结构体，包含资产的所有信息
+    /// @return assetHash 资产哈希值，用于唯一标识资产
     function hash(Asset memory asset) internal pure returns (bytes32) {
         return
             keccak256(
@@ -86,6 +89,9 @@ library LibOrder {
             );
     }
 
+    /// @dev 计算订单的哈希值，用于唯一标识订单
+    /// @param order 订单结构体，包含订单的所有信息
+    /// @return orderKey 订单键，用于唯一标识订单
     function hash(Order memory order) internal pure returns (OrderKey) {
         return
             OrderKey.wrap(

@@ -60,6 +60,7 @@ contract EasySwapOrderBook is
 
     event LogCancel(OrderKey indexed orderKey, address indexed maker);
 
+    // 匹配/撮合订单事件
     event LogMatch(
         OrderKey indexed makeOrderKey,
         OrderKey indexed takeOrderKey,
@@ -69,9 +70,20 @@ contract EasySwapOrderBook is
     );
 
     event LogWithdrawETH(address recipient, uint256 amount);
+
+    /// @dev 批量匹配订单时，内部调用发生错误时触发此事件。
+    /// @param offset 发生错误的匹配详情在输入数组中的索引位置。
+    /// @param msg 错误相关的数据，通常包含错误信息。
     event BatchMatchInnerError(uint256 offset, bytes msg);
+    
+    /// @dev 当订单创建、取消或编辑操作因不满足条件而被跳过执行时触发此事件。
+    /// @param orderKey 被跳过的订单的唯一标识。
+    /// @param salt 订单的随机数，用于确保订单的唯一性。
     event LogSkipOrder(OrderKey orderKey, uint64 salt);
 
+    /// @dev 仅允许通过委托调用执行修饰的函数。委托调用允许在调用合约的上下文中执行被调用合约的代码，
+    /// 常用于可升级合约模式，确保函数逻辑执行时使用调用合约的状态变量，
+    /// 同时避免在每个合约中重复实现相同的逻辑，提高代码的复用性和可维护性。
     modifier onlyDelegateCall() {
         _checkDelegateCall();
         _;
@@ -80,6 +92,7 @@ contract EasySwapOrderBook is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable state-variable-assignment
     address private immutable self = address(this);
 
+    // 交易资产库/金库地址
     address private _vault;
 
     /**
@@ -127,6 +140,7 @@ contract EasySwapOrderBook is
         __Pausable_init();
 
         __OrderStorage_init();
+        // 初始化协议管理合约，设置协议分成比例（协议费/手续费比例）
         __ProtocolManager_init(newProtocolShare);
         __OrderValidator_init(EIP712Name, EIP712Version);
 
@@ -144,9 +158,7 @@ contract EasySwapOrderBook is
      * @param newOrders Multiple order structure data.
      * @return newOrderKeys The unique id of the order is returned in order, if the id is empty, the corresponding order was not created correctly.
      */
-    function makeOrders(
-        LibOrder.Order[] calldata newOrders
-    )
+    function makeOrders(LibOrder.Order[] calldata newOrders)
         external
         payable
         override
@@ -161,17 +173,15 @@ contract EasySwapOrderBook is
         for (uint256 i = 0; i < orderAmount; ++i) {
             uint128 buyPrice; // the price of bid order
             if (newOrders[i].side == LibOrder.Side.Bid) {
-                buyPrice =
-                    Price.unwrap(newOrders[i].price) *
-                    newOrders[i].nft.amount;
+                buyPrice = Price.unwrap(newOrders[i].price) * newOrders[i].nft.amount;
             }
 
+            // 尝试创建新订单，传入当前订单数据和出价金额，返回新订单的唯一标识
             OrderKey newOrderKey = _makeOrderTry(newOrders[i], buyPrice);
             newOrderKeys[i] = newOrderKey;
             if (
                 // if the order is not created successfully, the eth will be returned
-                OrderKey.unwrap(newOrderKey) !=
-                OrderKey.unwrap(LibOrder.ORDERKEY_SENTINEL)
+                OrderKey.unwrap(newOrderKey) != OrderKey.unwrap(LibOrder.ORDERKEY_SENTINEL)
             ) {
                 ETHAmount += buyPrice;
             }
@@ -179,6 +189,7 @@ contract EasySwapOrderBook is
 
         if (msg.value > ETHAmount) {
             // return the remaining eth，if the eth is not enough, the transaction will be reverted
+            // 返回剩余的 ETH 给调用者，若 ETH 不足，交易将回滚
             _msgSender().safeTransferETH(msg.value - ETHAmount);
         }
     }
@@ -187,9 +198,7 @@ contract EasySwapOrderBook is
      * @dev Cancels multiple orders by their order keys.
      * @param orderKeys The array of order keys to cancel.
      */
-    function cancelOrders(
-        OrderKey[] calldata orderKeys
-    )
+    function cancelOrders(OrderKey[] calldata orderKeys)
         external
         override
         whenNotPaused
@@ -211,9 +220,7 @@ contract EasySwapOrderBook is
      * @param editDetails The edit details of oldOrderKey and new order info
      * @return newOrderKeys The unique id of the order is returned in order, if the id is empty, the corresponding order was not edit correctly.
      */
-    function editOrders(
-        LibOrder.EditDetail[] calldata editDetails
-    )
+    function editOrders(LibOrder.EditDetail[] calldata editDetails)
         external
         payable
         override
@@ -242,6 +249,7 @@ contract EasySwapOrderBook is
         LibOrder.Order calldata sellOrder,
         LibOrder.Order calldata buyOrder
     ) external payable override whenNotPaused nonReentrant {
+        // 如果返回的costValue>0，说明买方需要支付额外的代币（ETH）
         uint256 costValue = _matchOrder(sellOrder, buyOrder, msg.value);
         if (msg.value > costValue) {
             _msgSender().safeTransferETH(msg.value - costValue);
@@ -259,9 +267,7 @@ contract EasySwapOrderBook is
      * @param matchDetails Array of `MatchDetail` structs containing the details of sell and buy order to be matched.
      */
     /// @custom:oz-upgrades-unsafe-allow delegatecall
-    function matchOrders(
-        LibOrder.MatchDetail[] calldata matchDetails
-    )
+    function matchOrders(LibOrder.MatchDetail[] calldata matchDetails)
         external
         payable
         override
@@ -304,6 +310,11 @@ contract EasySwapOrderBook is
         }
     }
 
+    /// @dev 匹配买卖订单，但不处理剩余 ETH 的返还逻辑。该函数仅可通过委托调用执行，且在合约未暂停时才可使用。
+    /// @param sellOrder 卖方订单信息。
+    /// @param buyOrder 买方订单信息。
+    /// @param msgValue 调用时传入的 ETH 数量。
+    /// @return costValue 匹配订单所花费的 ETH 数量。
     function matchOrderWithoutPayback(
         LibOrder.Order calldata sellOrder,
         LibOrder.Order calldata buyOrder,
@@ -329,6 +340,7 @@ contract EasySwapOrderBook is
             (order.expiry > block.timestamp || order.expiry == 0) && // expiry must be greater than current block timestamp or no expiry
             filledAmount[LibOrder.hash(order)] == 0 // order cannot be canceled or filled
         ) {
+            // 计算订单的哈希值，作为订单的唯一标识
             newOrderKey = LibOrder.hash(order);
 
             // deposit asset to vault
@@ -337,6 +349,7 @@ contract EasySwapOrderBook is
                     // limit list order amount to 1
                     return LibOrder.ORDERKEY_SENTINEL;
                 }
+                // 向资产 vault 存款 NFT
                 IEasySwapVault(_vault).depositNFT(
                     newOrderKey,
                     order.maker,
@@ -347,6 +360,7 @@ contract EasySwapOrderBook is
                 if (order.nft.amount == 0) {
                     return LibOrder.ORDERKEY_SENTINEL;
                 }
+                // 向资产 vault 存款 ETH
                 IEasySwapVault(_vault).depositETH{value: uint256(ETHAmount)}(
                     newOrderKey,
                     ETHAmount
@@ -370,9 +384,7 @@ contract EasySwapOrderBook is
         }
     }
 
-    function _cancelOrderTry(
-        OrderKey orderKey
-    ) internal returns (bool success) {
+    function _cancelOrderTry(OrderKey orderKey) internal returns (bool success) {
         LibOrder.Order memory order = orders[orderKey].order;
 
         if (
@@ -507,6 +519,7 @@ contract EasySwapOrderBook is
                 _removeOrder(sellOrder);
                 _updateFilledAmount(sellOrder.nft.amount, sellOrderKey); // sell order totally filled
             }
+            // 买单可能已被部分成交（之前先于其他卖单配对过），因此需要更新买单的已成交数量
             _updateFilledAmount(filledAmount[buyOrderKey] + 1, buyOrderKey);
             emit LogMatch(
                 sellOrderKey,
@@ -517,13 +530,16 @@ contract EasySwapOrderBook is
             );
 
             // transfer nft&eth
+            // 先将 ETH 从买方 Vault 中提取到当前合约，扣除协议费后再转给卖方
             IEasySwapVault(_vault).withdrawETH(
                 buyOrderKey,
                 fillPrice,
                 address(this)
             );
 
+            // 计算协议手续费，根据成交价格和协议分成比例计算
             uint128 protocolFee = _shareToAmount(fillPrice, protocolShare);
+            // 将扣除协议手续费后的 ETH 金额转账给卖方
             sellOrder.maker.safeTransferETH(fillPrice - protocolFee);
 
             if (isSellExist) {
@@ -549,10 +565,12 @@ contract EasySwapOrderBook is
 
             uint128 buyPrice = Price.unwrap(buyOrder.price);
             uint128 fillPrice = Price.unwrap(sellOrder.price);
+            // 检查买方是否已存在于订单存储中
             if (!isBuyExist) {
                 require(msgValue >= fillPrice, "HD: value < fill price");
             } else {
                 require(buyPrice >= fillPrice, "HD: buy price < fill price");
+                // 先将 ETH 从买方 Vault 中提取到当前合约，扣除协议费后再转给卖方
                 IEasySwapVault(_vault).withdrawETH(
                     buyOrderKey,
                     buyPrice,
@@ -575,6 +593,7 @@ contract EasySwapOrderBook is
             // transfer nft&eth
             uint128 protocolFee = _shareToAmount(fillPrice, protocolShare);
             sellOrder.maker.safeTransferETH(fillPrice - protocolFee);
+            // 买方订单支付金额大于订单价格，需要将多出的 ETH 返还给买方
             if (buyPrice > fillPrice) {
                 buyOrder.maker.safeTransferETH(buyPrice - fillPrice);
             }
@@ -585,12 +604,19 @@ contract EasySwapOrderBook is
                 sellOrder.nft.collection,
                 sellOrder.nft.tokenId
             );
+            // 若买方订单已存在于订单存储中，则不需要额外再花费代币，直接使用Vault中的ETH，花费的 ETH 金额为 0，否则为买方出价金额
             costValue = isBuyExist ? 0 : buyPrice;
         } else {
             revert("HD: sender invalid");
         }
     }
 
+    /// @dev 检查订单是否可匹配。
+    /// 确保订单键值不同、方向正确、销售类型匹配、资产匹配、订单未被完全成交。
+    /// @param sellOrder 卖方订单。
+    /// @param buyOrder 买方订单。
+    /// @param sellOrderKey 卖方订单键值。
+    /// @param buyOrderKey 买方订单键值。
     function _isMatchAvailable(
         LibOrder.Order memory sellOrder,
         LibOrder.Order memory buyOrder,
@@ -611,11 +637,13 @@ contract EasySwapOrderBook is
             "HD: kind mismatch"
         );
         require(sellOrder.maker != buyOrder.maker, "HD: same maker");
-        require( // check if the asset is the same
+        require( 
+            // 检查买方订单是否为按集合固定价格类型，若是则无需检查具体 NFT 藏品和 Token ID
+            // 或者检查卖方和买方订单的 NFT 藏品地址和 Token ID 是否一致
             buyOrder.saleKind == LibOrder.SaleKind.FixedPriceForCollection ||
                 (sellOrder.nft.collection == buyOrder.nft.collection &&
                     sellOrder.nft.tokenId == buyOrder.nft.tokenId),
-            "HD: asset mismatch"
+            "HD: asset mismatch"  // 若不满足条件，抛出资产不匹配错误
         );
         require(
             filledAmount[sellOrderKey] < sellOrder.nft.amount &&
@@ -636,6 +664,8 @@ contract EasySwapOrderBook is
         return (total * share) / LibPayInfo.TOTAL_SHARE;
     }
 
+    /// @dev 检查当前调用是否为委托调用。通过比较当前合约地址和初始化时记录的合约地址，
+    /// 如果不相等则表示当前是通过委托调用执行的，反之则抛出异常。
     function _checkDelegateCall() private view {
         require(address(this) != self);
     }
