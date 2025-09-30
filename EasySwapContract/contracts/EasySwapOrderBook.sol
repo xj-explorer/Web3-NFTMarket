@@ -680,6 +680,10 @@ contract EasySwapOrderBook is
         _vault = newVault;
     }
 
+    /// @dev 提取合约中的 ETH（协议费/手续费） 到指定地址。
+    /// 仅可由合约所有者调用，确保提取的金额不超过合约当前余额。
+    /// @param recipient 接收 ETH 的地址。
+    /// @param amount 提取的 ETH 金额。
     function withdrawETH(
         address recipient,
         uint256 amount

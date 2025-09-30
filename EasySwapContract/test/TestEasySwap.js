@@ -1,7 +1,12 @@
+// 引入 chai 库的 expect 断言函数，用于编写测试用例时进行断言
 const { expect } = require("chai")
+// 引入 hardhat 提供的 ethers 和 upgrades 模块，ethers 用于与以太坊网络交互，upgrades 用于管理可升级合约
 const { ethers, upgrades } = require("hardhat")
+// 引入 evm-bn 库的 toBn 函数，用于处理以太坊虚拟机中的大数字
 const { toBn } = require("evm-bn")
+// 从本地 common 文件引入 Side 和 SaleKind 常量
 const { Side, SaleKind } = require("./common")
+// 从 @prb/math 库引入 exp 函数，可能用于数学计算
 const { exp } = require("@prb/math")
 
 let owner, addr1, addr2, addrs
@@ -52,11 +57,13 @@ describe("EasySwap Test", function () {
         testERC721.setApprovalForAll(esVault.address, true)
         // testERC721.setApprovalForAll(esDex.address, true)
 
+        // 部署 EasySwapOrderBook 合约后，将其地址设置为 EasySwapVault 合约的订单簿
         await esVault.setOrderBook(esDex.address)
     })
 
     describe("should initialize successfully", async () => {
         it("should initialize successfully", async () => {
+            // 调用 esDex 合约的 eip712Domain 方法，获取 EIP-712 域信息
             info = await esDex.eip712Domain();
             expect(info.name).to.equal(EIP712Name)
             expect(info.version).to.equal(EIP712Version)
@@ -94,8 +101,7 @@ describe("EasySwap Test", function () {
             // txRec = await tx.wait()
             // console.log("txRec: ", txRec.logs)
 
-            await expect(await esDex.makeOrders(orders))
-                .to.emit(esDex, "LogMake")
+            await expect(await esDex.makeOrders(orders)).to.emit(esDex, "LogMake")
 
             const orderHash = await testLibOrder.getOrderHash(order)
             // console.log("orderHash: ", orderHash)
@@ -1964,6 +1970,8 @@ describe("EasySwap Test", function () {
                     salt: salt,
                 }
 
+                // { value: toBn("3") } 表示在调用 matchOrder 方法时，随交易发送 3 个单位的以太币。
+                // 此值通常用于在匹配订单时支付相应的费用或订单金额。
                 await expect(await esDex.connect(addr1).matchOrder(order, buyOrder, { value: toBn("3") }))
                     .to.changeEtherBalances([esDex, owner, addr1], [toBn("0.02"), toBn("0.98"), toBn("-1")]);
                 expect(await testERC721.ownerOf(0)).to.equal(addr1.address)
