@@ -12,8 +12,11 @@ contract EasySwapVault is IEasySwapVault, OwnableUpgradeable {
     using LibTransferSafeUpgradeable for address;
     using LibTransferSafeUpgradeable for IERC721;
 
+    // 记录 EasySwap 订单簿合约的地址
     address public orderBook;
+    // 映射关系：订单键到ETH余额，记录每个订单对应的ETH余额
     mapping(OrderKey => uint256) public ETHBalance;
+    // 映射关系：订单键到NFT Token ID，记录每个订单对应的NFT Token ID
     mapping(OrderKey => uint256) public NFTBalance;
 
     modifier onlyEasySwapOrderBook() {
@@ -82,11 +85,12 @@ contract EasySwapVault is IEasySwapVault, OwnableUpgradeable {
         OrderKey newOrderKey,
         uint256 oldETHAmount,
         uint256 newETHAmount,
-        address to
+        address to // 旧订单多余的 ETH 返还给旧订单的maker
     ) external payable onlyEasySwapOrderBook {
         ETHBalance[oldOrderKey] = 0;
         if (oldETHAmount > newETHAmount) {
             ETHBalance[newOrderKey] = newETHAmount;
+            // 将旧订单多余的 ETH 返还给旧订单的maker
             to.safeTransferETH(oldETHAmount - newETHAmount);
         } else if (oldETHAmount < newETHAmount) {
             require(
@@ -120,14 +124,13 @@ contract EasySwapVault is IEasySwapVault, OwnableUpgradeable {
         LibOrder.NFTInfo[] calldata assets
     ) external {
         for (uint256 i = 0; i < assets.length; ++i) {
-            IERC721(assets[i].collection).safeTransferNFT(
-                _msgSender(),
-                to,
-                assets[i].tokenId
-            );
+            IERC721(assets[i].collection).safeTransferNFT(_msgSender(),to,assets[i].tokenId);
         }
     }
 
+    // 实现 ERC721 标准的回调函数，用于接收 NFT 时的处理。
+    // 当合约通过 safeTransferFrom 方法接收 NFT 时，发送方合约会调用此函数。
+    // 如果此函数不返回正确的选择器，交易将被回滚。
     function onERC721Received(
         address,
         address,

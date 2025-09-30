@@ -232,6 +232,7 @@ contract EasySwapOrderBook is
 
         uint256 bidETHAmount;
         for (uint256 i = 0; i < editDetails.length; ++i) {
+            // bidPrice 为新订单所需的代币数量-旧订单剩余的代币数量
             (OrderKey newOrderKey, uint256 bidPrice) = _editOrderTry(
                 editDetails[i].oldOrderKey,
                 editDetails[i].newOrder
@@ -390,6 +391,7 @@ contract EasySwapOrderBook is
         if (
             order.maker == _msgSender() &&
             filledAmount[orderKey] < order.nft.amount // only unfilled order can be canceled
+            // 当前订单的已成交数量不能大于当前订单总数量
         ) {
             OrderKey orderHash = LibOrder.hash(order);
             _removeOrder(order);
@@ -402,8 +404,8 @@ contract EasySwapOrderBook is
                     order.nft.tokenId
                 );
             } else if (order.side == LibOrder.Side.Bid) {
-                uint256 availNFTAmount = order.nft.amount -
-                    filledAmount[orderKey];
+                // 实际可取消的NFT数量 = 订单总 NFT 数量 - 已成交 NFT 数量
+                uint256 availNFTAmount = order.nft.amount - filledAmount[orderKey];
                 IEasySwapVault(_vault).withdrawETH(
                     orderHash,
                     Price.unwrap(order.price) * availNFTAmount, // the withdraw amount of eth
@@ -442,7 +444,7 @@ contract EasySwapOrderBook is
             newOrder.maker != _msgSender() ||
             newOrder.salt == 0 ||
             (newOrder.expiry < block.timestamp && newOrder.expiry != 0) ||
-            filledAmount[LibOrder.hash(newOrder)] != 0 // order cannot be canceled or filled
+            filledAmount[LibOrder.hash(newOrder)] != 0 // 已经成交过部分NFT数量的订单不能被编辑
         ) {
             emit LogSkipOrder(oldOrderKey, newOrder.salt);
             return (LibOrder.ORDERKEY_SENTINEL, 0);
@@ -460,12 +462,14 @@ contract EasySwapOrderBook is
         if (oldOrder.side == LibOrder.Side.List) {
             IEasySwapVault(_vault).editNFT(oldOrderKey, newOrderKey);
         } else if (oldOrder.side == LibOrder.Side.Bid) {
-            uint256 oldRemainingPrice = Price.unwrap(oldOrder.price) *
-                (oldOrder.nft.amount - oldFilledAmount);
-            uint256 newRemainingPrice = Price.unwrap(newOrder.price) *
-                newOrder.nft.amount;
+            // 旧订单剩余的代币数量
+            uint256 oldRemainingPrice = Price.unwrap(oldOrder.price) * (oldOrder.nft.amount - oldFilledAmount);
+            // 新订单所需的代币数量
+            uint256 newRemainingPrice = Price.unwrap(newOrder.price) * newOrder.nft.amount;
+            // 新订单所需的代币数量大于旧订单剩余的代币数量，需要额外向资产 vault 存款 ETH 以满足新订单的需求
             if (newRemainingPrice > oldRemainingPrice) {
                 deltaBidPrice = newRemainingPrice - oldRemainingPrice;
+                // 需要额外向资产 vault 存款 ETH 以满足新订单的需求
                 IEasySwapVault(_vault).editETH{value: uint256(deltaBidPrice)}(
                     oldOrderKey,
                     newOrderKey,
@@ -661,7 +665,8 @@ contract EasySwapOrderBook is
         uint128 total,
         uint128 share
     ) internal pure returns (uint128) {
-        return (total * share) / LibPayInfo.TOTAL_SHARE;
+        // return (total * share) / LibPayInfo.TOTAL_SHARE;
+        return total * (share / LibPayInfo.TOTAL_SHARE);
     }
 
     /// @dev 检查当前调用是否为委托调用。通过比较当前合约地址和初始化时记录的合约地址，
