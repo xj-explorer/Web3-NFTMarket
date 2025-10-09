@@ -69,12 +69,13 @@ type ListingInfo struct {
 	Price         decimal.Decimal `json:"price"`
 }
 
+// TraitPrice 结构体用于表示带有特征的 NFT 价格信息
 type TraitPrice struct {
-	CollectionAddress string          `json:"collection_address"`
-	TokenID           string          `json:"token_id"`
-	Trait             string          `json:"trait"`
-	TraitValue        string          `json:"trait_value"`
-	Price             decimal.Decimal `json:"price"`
+	CollectionAddress string          `json:"collection_address"` // NFT 集合地址
+	TokenID           string          `json:"token_id"`           // NFT 代币 ID
+	Trait             string          `json:"trait"`              // NFT 特征名称
+	TraitValue        string          `json:"trait_value"`        // NFT 特征值
+	Price             decimal.Decimal `json:"price"`              // 该特征对应的价格
 }
 
 type ItemTopTraitResp struct {

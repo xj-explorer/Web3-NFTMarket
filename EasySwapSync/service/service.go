@@ -50,10 +50,15 @@ func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 
 	var err error
 	db := model.NewDB(cfg.DB)
+	// 创建集合过滤器实例，用于过滤集合数据
 	collectionFilter := collectionfilter.New(ctx, db, cfg.ChainCfg.Name, cfg.ProjectCfg.Name)
+	// 创建订单管理器实例，用于管理订单相关操作
 	orderManager := ordermanager.New(ctx, db, kvStore, cfg.ChainCfg.Name, cfg.ProjectCfg.Name)
+	// 声明订单簿同步器变量，后续根据不同链ID进行初始化
 	var orderbookSyncer *orderbookindexer.Service
+	// 声明链客户端变量，用于与区块链进行交互
 	var chainClient chainclient.ChainClient
+	// 打印链客户端连接的URL信息，方便调试
 	fmt.Println("chainClient url:" + cfg.AnkrCfg.HttpsUrl + cfg.AnkrCfg.ApiKey)
 
 	chainClient, err = chainclient.New(int(cfg.ChainCfg.ID), cfg.AnkrCfg.HttpsUrl+cfg.AnkrCfg.ApiKey)

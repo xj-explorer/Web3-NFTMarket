@@ -7,28 +7,28 @@ import (
 )
 
 const (
-	ListingOrder       = 1
-	OfferOrder         = 2
-	CollectionBidOrder = 3
-	ItemBidOrder       = 4
+	ListingOrder       = 1 // 挂单订单
+	OfferOrder         = 2 // 报价订单
+	CollectionBidOrder = 3 // 集合竞价订单
+	ItemBidOrder       = 4 // 单品竞价订单
 )
 
 const (
-	OrderStatusActive    = 0
-	OrderStatusInactive  = 1
-	OrderStatusExpired   = 2
-	OrderStatusCancelled = 3
-	OrderStatusFilled    = 4
-	OrderStatusNeedSign  = 5
+	OrderStatusActive    = 0 // 活跃订单
+	OrderStatusInactive  = 1 // 非活跃订单
+	OrderStatusExpired   = 2 // 过期订单
+	OrderStatusCancelled = 3 // 取消订单
+	OrderStatusFilled    = 4 // 已成交订单
+	OrderStatusNeedSign  = 5 // 待签名订单
 )
 
 const (
-	ListingType = 1
-	OfferType   = 2
+	ListingType = 1 // 挂单类型
+	OfferType   = 2 // 报价类型
 )
 
 const (
-	MarketOrderBook = iota
+	MarketOrderBook = iota // 市场订单簿
 )
 
 type Order struct {

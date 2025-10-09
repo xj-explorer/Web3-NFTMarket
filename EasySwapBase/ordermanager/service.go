@@ -88,7 +88,7 @@ func (om *OrderManager) Start() {
 	threading.GoSafe(om.ListenNewListingLoop) // 处理新订单
 	threading.GoSafe(om.orderExpiryProcess)   // 处理订单过期状态
 	threading.GoSafe(om.floorPriceProcess)    // 处理floorprice更新
-	threading.GoSafe(om.listCountProcess)     // 处理listCount更新
+	threading.GoSafe(om.listCountProcess)     // 处理listCount更新，每分钟更新有变动的集合的上架数量
 }
 
 func (om *OrderManager) Stop() {
@@ -106,11 +106,15 @@ type ListingInfo struct {
 func (om *OrderManager) ListenNewListingLoop() {
 	key := GenOrdersCacheKey(om.chain)
 	for {
+		// 从 Redis 列表左侧弹出一个订单信息
 		result, err := om.Xkv.Lpop(key)
+		// 若操作出错或未获取到结果，则进行错误处理
 		if err != nil || result == "" {
+			// 若错误不是 Redis 的 Nil 错误，则记录警告日志
 			if err != nil && err != redis.Nil {
 				xzap.WithContext(context.Background()).Warn("failed on get order from cache", zap.Error(err), zap.String("result", result))
 			}
+			// 休眠 1 秒后继续下一次循环
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -186,6 +190,10 @@ func (om *OrderManager) AddToOrderManagerQueue(order *multi.Order) error {
 		return errors.Wrap(err, "failed on marshal listing info")
 	}
 
+	// 使用 GenOrdersCacheKey 函数生成订单缓存的键名，将序列化后的订单信息 rawInfo 以字符串形式
+	// 通过 Xkv 的 Lpush 方法添加到 Redis 列表的左侧。
+	// 如果操作过程中出现错误，则使用 errors.Wrap 包装错误信息，返回一个包含上下文的错误。
+	// 区分不同链ID的订单缓存键名队列，确保每个链ID的订单都有独立的队列进行处理。
 	if _, err := om.Xkv.Lpush(GenOrdersCacheKey(om.chain), string(rawInfo)); err != nil {
 		return errors.Wrap(err, "failed on add to queue")
 	}

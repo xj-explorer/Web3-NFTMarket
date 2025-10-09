@@ -61,16 +61,26 @@ type Order struct {
 	Salt   uint64
 }
 
+// Service 结构体定义了订单簿索引服务所需的各项属性
 type Service struct {
-	ctx          context.Context
-	cfg          *config.Config
-	db           *gorm.DB
-	kv           *xkv.Store
+	// ctx 用于控制服务的上下文，可用于取消操作或超时控制
+	ctx context.Context
+	// cfg 存储服务的配置信息
+	cfg *config.Config
+	// db 是一个 gorm 数据库连接实例，用于与数据库交互
+	db *gorm.DB
+	// kv 是一个键值存储实例，用于存储一些临时或配置数据
+	kv *xkv.Store
+	// orderManager 是订单管理器实例，用于管理订单队列
 	orderManager *ordermanager.OrderManager
-	chainClient  chainclient.ChainClient
-	chainId      int64
-	chain        string
-	parsedAbi    abi.ABI
+	// chainClient 是区块链客户端实例，用于与区块链网络进行交互
+	chainClient chainclient.ChainClient
+	// chainId 表示当前连接的区块链网络的 ID
+	chainId int64
+	// chain 表示当前连接的区块链网络名称
+	chain string
+	// parsedAbi 是解析后的合约 ABI，用于解码区块链上的事件数据
+	parsedAbi abi.ABI
 }
 
 var MultiChainMaxBlockDifference = map[string]uint64{
@@ -98,7 +108,11 @@ func New(ctx context.Context, cfg *config.Config, db *gorm.DB, xkv *xkv.Store, c
 }
 
 func (s *Service) Start() {
+	// 使用 threading.GoSafe 启动一个安全的 goroutine，执行订单簿事件同步循环
+	// SyncOrderBookEventLoop 函数会持续监听区块链上的订单簿相关事件，并更新本地数据库
 	threading.GoSafe(s.SyncOrderBookEventLoop)
+	// 使用 threading.GoSafe 启动一个安全的 goroutine，执行集合地板价变更的维护循环
+	// UpKeepingCollectionFloorChangeLoop 函数会定期清理过期的集合地板价数据，并更新最新的地板价信息
 	threading.GoSafe(s.UpKeepingCollectionFloorChangeLoop)
 }
 
@@ -238,6 +252,7 @@ func (s *Service) handleMakeEvent(log ethereumTypes.Log) {
 		xzap.WithContext(s.ctx).Error("failed on create order",
 			zap.Error(err))
 	}
+	// 通过区块号获取区块时间
 	blockTime, err := s.chainClient.BlockTimeByNumber(s.ctx, big.NewInt(int64(log.BlockNumber)))
 	if err != nil {
 		xzap.WithContext(s.ctx).Error("failed to get block time", zap.Error(err))

@@ -71,6 +71,8 @@ var DaemonCmd = &cobra.Command{
 		// 信号通知chan
 		onSignal := make(chan os.Signal)
 		// 优雅退出
+		// 使用 signal.Notify 函数监听系统信号，将系统接收到的 SIGINT（通常由 Ctrl+C 触发）和 SIGTERM（通常用于优雅关闭进程）信号发送到 onSignal 通道，
+		// 以便程序能够捕获这些信号并执行相应的退出逻辑。
 		signal.Notify(onSignal, syscall.SIGINT, syscall.SIGTERM)
 		select {
 		case sig := <-onSignal:
@@ -88,6 +90,7 @@ var DaemonCmd = &cobra.Command{
 }
 
 func init() {
-	// 将api初始化命令添加到主命令中
+	// 将 daemon 子命令添加到主命令 rootCmd 中，使得在执行主命令时可以调用 daemon 命令
+	// 该操作允许用户通过主命令入口来启动同步服务守护进程
 	rootCmd.AddCommand(DaemonCmd)
 }

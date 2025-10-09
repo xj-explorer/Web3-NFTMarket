@@ -12,6 +12,7 @@ import (
 )
 
 func NewRouter(svcCtx *svc.ServerCtx) *gin.Engine {
+	// 强制在控制台输出带颜色的日志
 	gin.ForceConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()                        // 新建一个gin引擎实例

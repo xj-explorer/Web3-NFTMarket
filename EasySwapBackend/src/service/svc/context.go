@@ -17,13 +17,20 @@ import (
 	"github.com/ProjectsTask/EasySwapBackend/src/dao"
 )
 
+// ServerCtx 定义服务上下文结构体，包含服务运行所需的各种配置和资源。
 type ServerCtx struct {
-	C  *config.Config
+	// C 存储服务的配置信息。
+	C *config.Config
+	// DB 存储 GORM 数据库实例。
 	DB *gorm.DB
 	//ImageMgr image.ImageManager
-	Dao      *dao.Dao
-	KvStore  *xkv.Store
-	RankKey  string
+	// Dao 存储数据访问对象实例。
+	Dao *dao.Dao
+	// KvStore 存储键值对存储实例。
+	KvStore *xkv.Store
+	// RankKey 存储排序相关的键。
+	RankKey string
+	// NodeSrvs 存储不同链 ID 对应的 NFT 链服务实例。
 	NodeSrvs map[int64]*nftchainservice.Service
 }
 
@@ -35,7 +42,9 @@ func NewServiceContext(c *config.Config) (*ServerCtx, error) {
 	//}
 
 	// Log
+	// 初始化日志配置，调用 xzap.SetUp 方法设置日志。
 	_, err = xzap.SetUp(c.Log)
+	// 若日志初始化过程中出现错误，则返回错误信息，终止服务上下文的创建。
 	if err != nil {
 		return nil, err
 	}
